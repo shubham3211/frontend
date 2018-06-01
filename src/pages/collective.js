@@ -1,9 +1,6 @@
-import React from 'react'
+import React from 'react';
 import PropTypes from 'prop-types';
-import { addCollectiveData } from '../graphql/queries';
-import withData from '../lib/withData';
-import withLoggedInUser from '../lib/withLoggedInUser';
-import withIntl from '../lib/withIntl';
+
 import NotFound from '../components/NotFoundPage';
 import Loading from '../components/Loading';
 import ErrorPage from '../components/ErrorPage';
@@ -11,17 +8,24 @@ import Collective from '../components/Collective';
 import UserCollective from '../components/UserCollective';
 import { get } from 'lodash';
 
+import { addCollectiveData } from '../graphql/queries';
+
+import withData from '../lib/withData';
+import withIntl from '../lib/withIntl';
+import withLoggedInUser from '../lib/withLoggedInUser';
+
 class CollectivePage extends React.Component {
 
   static getInitialProps ({ query }) {
-    return { slug: query && query.slug, query }
+    return { slug: query && query.slug, query };
   }
 
   static propTypes = {
-    getLoggedInUser: PropTypes.func.isRequired,
-    data: PropTypes.object,
+    slug: PropTypes.string, // for addCollectiveData
     query: PropTypes.object,
-  }
+    data: PropTypes.object.isRequired, // from withData
+    getLoggedInUser: PropTypes.func.isRequired, // from withLoggedInUser
+  };
 
   constructor(props) {
     super(props);
@@ -30,7 +34,7 @@ class CollectivePage extends React.Component {
 
   async componentDidMount() {
     const { getLoggedInUser } = this.props;
-    const LoggedInUser = getLoggedInUser && await getLoggedInUser();
+    const LoggedInUser = await getLoggedInUser();
     this.setState({ LoggedInUser });
   }
 
@@ -44,8 +48,8 @@ class CollectivePage extends React.Component {
     }
 
     if (data.error) {
-      console.error("graphql error>>>", data.error.message);
-      return (<ErrorPage message="GraphQL error" />)
+      console.error('graphql error>>>', data.error.message);
+      return (<ErrorPage message="GraphQL error" />);
     }
 
     const collective = data.Collective;
@@ -71,4 +75,4 @@ class CollectivePage extends React.Component {
   }
 }
 
-export default withData(withLoggedInUser(addCollectiveData(withIntl(CollectivePage))));
+export default withData(withIntl(withLoggedInUser(addCollectiveData(CollectivePage))));

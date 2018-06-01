@@ -1,8 +1,6 @@
 import React from 'react';
-import withData from '../lib/withData';
-import withIntl from '../lib/withIntl';
+import PropTypes from 'prop-types';
 
-import { addCollectiveCoverData, addGetLoggedInUserFunction } from '../graphql/queries';
 import Header from '../components/Header';
 import Body from '../components/Body';
 import Footer from '../components/Footer';
@@ -13,12 +11,23 @@ import ErrorPage from '../components/ErrorPage';
 
 import TransactionsWithData from '../apps/expenses/components/TransactionsWithData';
 
+import { addCollectiveCoverData } from '../graphql/queries';
+
+import withData from '../lib/withData';
+import withIntl from '../lib/withIntl';
+import withLoggedInUser from '../lib/withLoggedInUser';
 
 class TransactionsPage extends React.Component {
 
-  static getInitialProps ({ query: { collectiveSlug }, data }) {
-    return { slug: collectiveSlug, data }
+  static getInitialProps ({ query: { collectiveSlug } }) {
+    return { slug: collectiveSlug };
   }
+
+  static propTypes = {
+    slug: PropTypes.string, // for addCollectiveCoverData
+    data: PropTypes.object.isRequired, // from withData
+    getLoggedInUser: PropTypes.func.isRequired, // from withLoggedInUser
+  };
 
   constructor(props) {
     super(props);
@@ -27,8 +36,8 @@ class TransactionsPage extends React.Component {
 
   async componentDidMount() {
     const { getLoggedInUser } = this.props;
-    const LoggedInUser = getLoggedInUser && await getLoggedInUser(this.props.collectiveSlug);
-    this.setState({LoggedInUser});
+    const LoggedInUser = await getLoggedInUser();
+    this.setState({ LoggedInUser });
   }
 
   render() {
@@ -39,12 +48,12 @@ class TransactionsPage extends React.Component {
     if (!data.Collective) return (<NotFound />);
 
     if (data.error) {
-      console.error("graphql error>>>", data.error.message);
-      return (<ErrorPage message="GraphQL error" />)
+      console.error('graphql error>>>', data.error.message);
+      return (<ErrorPage message="GraphQL error" />);
     }
 
     const collective = data.Collective;
-    const cta = ["USER", "ORGANIZATION"].indexOf(collective.type) === -1 && { href: `/${collective.slug}#contribute`, label: 'contribute' };
+    const cta = ['USER', 'ORGANIZATION'].indexOf(collective.type) === -1 && { href: `/${collective.slug}#contribute`, label: 'contribute' };
 
     return (
       <div className="TransactionsPage">
@@ -88,4 +97,4 @@ class TransactionsPage extends React.Component {
 
 }
 
-export default withData(addGetLoggedInUserFunction(addCollectiveCoverData(withIntl(TransactionsPage))));
+export default withData(withIntl(withLoggedInUser(addCollectiveCoverData(TransactionsPage))));

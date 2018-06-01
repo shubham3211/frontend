@@ -1,25 +1,38 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import { FormattedMessage } from 'react-intl';
+
+import ExpensesWithData from '../apps/expenses/components/ExpensesWithData';
+import ExpensesStatsWithData from '../apps/expenses/components/ExpensesStatsWithData';
+
 import Header from '../components/Header';
 import Body from '../components/Body';
 import Footer from '../components/Footer';
 import CollectiveCover from '../components/CollectiveCover';
-import { addCollectiveCoverData, addGetLoggedInUserFunction } from '../graphql/queries';
 import Loading from '../components/Loading';
 import NotFound from '../components/NotFoundPage';
 import ErrorPage from '../components/ErrorPage';
+import SectionTitle from '../components/SectionTitle';
+
+import { addCollectiveCoverData } from '../graphql/queries';
+
 import withData from '../lib/withData';
 import withIntl from '../lib/withIntl';
-import ExpensesWithData from '../apps/expenses/components/ExpensesWithData';
-import ExpensesStatsWithData from '../apps/expenses/components/ExpensesStatsWithData';
-import { FormattedMessage } from 'react-intl'
-import SectionTitle from '../components/SectionTitle';
+import withLoggedInUser from '../lib/withLoggedInUser';
 
 class ExpensesPage extends React.Component {
 
-  static getInitialProps (props) {
-    const { query: { collectiveSlug, filter, value }, data } = props;
-    return { slug: collectiveSlug, data, filter, value }
+  static getInitialProps ({ query: { collectiveSlug, filter, value } }) {
+    return { slug: collectiveSlug, filter, value };
   }
+
+  static propTypes = {
+    slug: PropTypes.string, // for addCollectiveCoverData
+    filter: PropTypes.string,
+    value: PropTypes.string,
+    data: PropTypes.object.isRequired, // from withData
+    getLoggedInUser: PropTypes.func.isRequired, // from withLoggedInUser
+  };
 
   constructor(props) {
     super(props);
@@ -28,7 +41,7 @@ class ExpensesPage extends React.Component {
 
   async componentDidMount() {
     const { getLoggedInUser } = this.props;
-    const LoggedInUser = getLoggedInUser && await getLoggedInUser(this.props.collectiveSlug);
+    const LoggedInUser = await getLoggedInUser();
     this.setState({ LoggedInUser });
   }
 
@@ -40,8 +53,8 @@ class ExpensesPage extends React.Component {
     if (!data.Collective) return (<NotFound />);
 
     if (data.error) {
-      console.error("graphql error>>>", data.error.message);
-      return (<ErrorPage message="GraphQL error" />)
+      console.error('graphql error>>>', data.error.message);
+      return (<ErrorPage message="GraphQL error" />);
     }
 
     const collective = data.Collective;
@@ -50,18 +63,18 @@ class ExpensesPage extends React.Component {
     if (this.props.value) {
       action = {
         label: <FormattedMessage id="expenses.viewAll" defaultMessage="View All Expenses" />,
-        href: `/${collective.slug}/expenses`
-      }
+        href: `/${collective.slug}/expenses`,
+      };
 
       if (this.props.filter === 'categories') {
         const category = decodeURIComponent(this.props.value);
         filter = { category };
-        subtitle = <FormattedMessage id="expenses.byCategory" defaultMessage="Expenses in {category}" values={{category }} />
+        subtitle = <FormattedMessage id="expenses.byCategory" defaultMessage="Expenses in {category}" values={{ category }} />;
       }
       if (this.props.filter === 'recipients') {
         const recipient = decodeURIComponent(this.props.value);
         filter = { recipient };
-        subtitle = <FormattedMessage id="expenses.byRecipient" defaultMessage="Expenses by {recipient}" values={{recipient}} />
+        subtitle = <FormattedMessage id="expenses.byRecipient" defaultMessage="Expenses by {recipient}" values={{ recipient }} />;
       }
     }
 
@@ -93,7 +106,8 @@ class ExpensesPage extends React.Component {
               }
             }
           }
-        `}</style>
+        `}
+        </style>
 
         <Header
           title={collective.name}
@@ -143,4 +157,4 @@ class ExpensesPage extends React.Component {
 
 }
 
-export default withData(addGetLoggedInUserFunction(addCollectiveCoverData(withIntl(ExpensesPage))));
+export default withData(withIntl(withLoggedInUser(addCollectiveCoverData(ExpensesPage))));
